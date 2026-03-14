@@ -33,7 +33,7 @@ export const profile: Profile = {
   bio: 'Portafolio de proyectos por empresa: dashboards, web apps y sitios.',
   email: 'yauridavid00@gmail.com',
   intro:
-    'Cuento con mas de 4 anos de experiencia desarrollando proyectos para distintos rubros y puedo liderar soluciones de inicio a fin como Full Stack Developer, conectando frontend, backend, despliegue e integraciones para entregar sistemas solidos, escalables y listos para operar.',
+    'Cuento con mas de 4 años de experiencia desarrollando proyectos para distintos rubros y puedo liderar soluciones de inicio a fin como Full Stack Developer, conectando frontend, backend, despliegue e integraciones para entregar sistemas solidos, escalables y listos para operar.',
   featuredSkillsTitle: 'Stack y herramientas',
   featuredSkills: [
     { label: 'Vue.js', icon: 'i-simple-icons-vuedotjs' },
