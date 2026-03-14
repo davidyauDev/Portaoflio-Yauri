@@ -4,8 +4,15 @@ import type { Portfolio } from '../../data/portfolios'
 const props = defineProps<{ portfolio: Portfolio }>()
 
 const portfolio = computed(() => props.portfolio)
+const isFeatured = computed(() => portfolio.value.slug === 'juegosjhigger')
+const titleClass = computed(() =>
+  portfolio.value.slug === 'juegosjhigger'
+    ? 'font-display text-4xl sm:text-5xl uppercase tracking-[0.08em] leading-none'
+    : ''
+)
 const selectedImage = shallowRef<string | null>(null)
 const scroller = ref<HTMLDivElement | null>(null)
+const activeIndex = ref(0)
 
 const isPreviewOpen = computed({
   get: () => selectedImage.value !== null,
@@ -25,22 +32,81 @@ function scrollCarousel(direction: -1 | 1) {
   const amount = Math.max(320, Math.floor(el.clientWidth * 0.9))
   el.scrollBy({ left: amount * direction, behavior: 'smooth' })
 }
+
+function updateActiveIndex() {
+  const el = scroller.value
+  if (!el) return
+
+  const items = Array.from(el.querySelectorAll<HTMLElement>('[data-carousel-item="true"]'))
+  if (!items.length) {
+    activeIndex.value = 0
+    return
+  }
+
+  const viewportCenter = el.scrollLeft + el.clientWidth / 2
+  let nearest = 0
+  let minDistance = Number.POSITIVE_INFINITY
+
+  items.forEach((item, index) => {
+    const itemCenter = item.offsetLeft + item.clientWidth / 2
+    const distance = Math.abs(itemCenter - viewportCenter)
+
+    if (distance < minDistance) {
+      minDistance = distance
+      nearest = index
+    }
+  })
+
+  activeIndex.value = nearest
+}
+
+function scrollToIndex(index: number) {
+  const el = scroller.value
+  if (!el) return
+
+  const items = Array.from(el.querySelectorAll<HTMLElement>('[data-carousel-item="true"]'))
+  const item = items[index]
+  if (!item) return
+
+  el.scrollTo({
+    left: Math.max(0, item.offsetLeft - 8),
+    behavior: 'smooth'
+  })
+}
+
+onMounted(() => {
+  nextTick(() => updateActiveIndex())
+})
+
+watch(() => portfolio.value.images.length, () => {
+  nextTick(() => updateActiveIndex())
+})
 </script>
 
 <template>
-  <section class="rounded-3xl border border-default bg-ui-bg-elevated/40 p-5 sm:p-6">
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+  <section class="motion-glow animate-enter rounded-[1.65rem] border border-default bg-ui-bg-elevated/40 p-4 shadow-[0_24px_80px_-48px_rgba(0,220,130,0.22)] sm:rounded-[2rem] sm:p-6 [--enter-delay:120ms]">
+    <header class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
       <div class="min-w-0">
-        <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-highlighted">
+        <div
+          v-if="portfolio.eyebrow"
+          class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-primary uppercase"
+        >
+          <span class="size-2 rounded-full bg-primary" />
+          {{ portfolio.eyebrow }}
+        </div>
+        <h2
+          class="text-xl sm:text-2xl font-semibold tracking-tight text-highlighted"
+          :class="titleClass"
+        >
           {{ portfolio.title }}
         </h2>
-        <p class="mt-1 text-sm sm:text-base text-muted-foreground">
+        <p class="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base sm:leading-relaxed">
           {{ portfolio.description }}
         </p>
 
         <div
           v-if="portfolio.tags?.length"
-          class="mt-3 flex flex-wrap gap-2"
+          class="mt-4 flex flex-wrap gap-1.5 sm:gap-2"
         >
           <UBadge
             v-for="tag in portfolio.tags"
@@ -53,14 +119,32 @@ function scrollCarousel(direction: -1 | 1) {
           </UBadge>
         </div>
 
+        <div
+          v-if="portfolio.detailCards?.length"
+          class="mt-5 grid gap-3 sm:grid-cols-3"
+        >
+          <div
+            v-for="detail in portfolio.detailCards"
+            :key="detail.label"
+            class="rounded-2xl border border-default bg-ui-bg-elevated/40 px-4 py-3"
+          >
+            <p class="text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
+              {{ detail.label }}
+            </p>
+            <p class="mt-1 text-sm font-semibold text-highlighted text-balance">
+              {{ detail.value }}
+            </p>
+          </div>
+        </div>
+
         <ul
           v-if="portfolio.highlights?.length"
-          class="mt-4 grid gap-1.5 text-sm text-muted-foreground"
+          class="mt-5 grid gap-2.5 text-sm text-muted-foreground"
         >
           <li
             v-for="(item, i) in portfolio.highlights"
             :key="`${portfolio.slug}-hl-${i}`"
-            class="flex gap-2"
+            class="flex gap-3"
           >
             <UIcon
               name="i-lucide-check"
@@ -71,27 +155,44 @@ function scrollCarousel(direction: -1 | 1) {
         </ul>
       </div>
 
-      <div class="flex items-center gap-2 self-start">
+      <div class="grid w-full grid-cols-1 gap-2 self-start sm:flex sm:w-auto sm:flex-col sm:items-end">
+        <UButton
+          v-if="portfolio.website"
+          :to="portfolio.website"
+          target="_blank"
+          rel="noopener noreferrer"
+          color="primary"
+          :variant="isFeatured ? 'solid' : 'soft'"
+          icon="i-lucide-external-link"
+          label="Sitio en vivo"
+          class="w-full justify-center sm:w-auto"
+        />
         <UButton
           :to="`/portfolio/${portfolio.slug}`"
           color="neutral"
           variant="ghost"
           icon="i-lucide-images"
-          label="Ver pagina"
+          label="Ver detalle"
+          class="w-full justify-center sm:w-auto"
         />
       </div>
     </header>
 
     <div
       v-if="portfolio.images.length"
-      class="mt-5"
+      class="mt-6"
     >
-      <div class="flex items-center justify-between gap-3">
-        <p class="text-xs text-muted-foreground">
-          {{ portfolio.images.length }} imagen{{ portfolio.images.length === 1 ? '' : 'es' }}
-        </p>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+            Galeria
+          </p>
+          <p class="mt-1 text-sm text-highlighted">
+            {{ portfolio.images.length }} captura{{ portfolio.images.length === 1 ? '' : 's' }} seleccionada{{ portfolio.images.length === 1 ? '' : 's' }}
+          </p>
+        </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 self-end rounded-full border border-default bg-ui-bg-elevated/30 p-1">
           <UButton
             color="neutral"
             variant="ghost"
@@ -112,18 +213,20 @@ function scrollCarousel(direction: -1 | 1) {
       </div>
 
       <div class="relative mt-3">
-        <div class="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-ui-bg to-transparent opacity-70" />
-        <div class="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-ui-bg to-transparent opacity-70" />
+        <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-10 bg-gradient-to-r from-ui-bg to-transparent opacity-70 sm:block" />
+        <div class="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-ui-bg to-transparent opacity-70 sm:block" />
 
         <div
           ref="scroller"
-          class="-mx-2 flex snap-x snap-proximity gap-4 overflow-x-auto px-2 pb-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          @scroll.passive="updateActiveIndex"
+          class="-mx-2 flex snap-x snap-proximity gap-4 overflow-x-auto px-2 pb-2 pt-1 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <button
             v-for="(img, idx) in portfolio.images"
             :key="`${portfolio.slug}-${idx}`"
             type="button"
-            class="group relative w-[280px] shrink-0 snap-start overflow-hidden rounded-2xl border border-default bg-ui-bg-elevated/40 shadow-sm transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-[360px] md:w-[520px]"
+            data-carousel-item="true"
+            class="group relative w-[84vw] max-w-[320px] shrink-0 snap-start overflow-hidden rounded-[1.35rem] border border-default bg-ui-bg-elevated/40 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-[360px] sm:max-w-none sm:rounded-[1.6rem] md:w-[520px]"
             @click="openPreview(img.url)"
           >
             <div class="relative aspect-[16/9]">
@@ -144,7 +247,7 @@ function scrollCarousel(direction: -1 | 1) {
               </div>
 
               <div class="pointer-events-none absolute bottom-3 right-3">
-                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-xs text-white backdrop-blur-sm">
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm sm:px-3 sm:text-xs">
                   <UIcon
                     name="i-lucide-expand"
                     class="size-3.5"
@@ -154,6 +257,26 @@ function scrollCarousel(direction: -1 | 1) {
               </div>
             </div>
           </button>
+        </div>
+      </div>
+
+      <div
+        v-if="portfolio.images.length > 1"
+        class="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p class="text-xs text-muted-foreground">
+          {{ String(activeIndex + 1).padStart(2, '0') }} / {{ String(portfolio.images.length).padStart(2, '0') }}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="(_, idx) in portfolio.images"
+            :key="`${portfolio.slug}-dot-${idx}`"
+            type="button"
+            class="carousel-dot"
+            :class="{ 'carousel-dot-active': idx === activeIndex }"
+            :aria-label="`Ir a captura ${idx + 1}`"
+            @click="scrollToIndex(idx)"
+          />
         </div>
       </div>
     </div>

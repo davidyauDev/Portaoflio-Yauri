@@ -4,13 +4,13 @@ import { portfolios } from '../../data/portfolios'
 </script>
 
 <template>
-  <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-14 sm:py-16 xl:py-10">
+  <main id="proyectos" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-14 sm:py-16 xl:py-10">
     <header class="mb-10 sm:mb-12 text-center xl:hidden">
-      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-highlighted mb-2">
-        Portafolio
+      <h1 class="mb-2 text-3xl sm:text-4xl font-bold tracking-tight text-highlighted">
+        Casos seleccionados
       </h1>
       <p class="mx-auto max-w-2xl text-base sm:text-lg text-muted-foreground text-balance">
-        Trabajos y capturas organizadas por empresa.
+        Proyectos con foco en producto, claridad visual y resultado real para negocio.
       </p>
     </header>
 
